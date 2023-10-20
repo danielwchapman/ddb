@@ -15,13 +15,15 @@ import (
 
 // assume composite primary key where columns are named 'PK' and 'SK'
 
-// StdClient provides convenience methods for working with a DynamoDB table following Single Table Design.
-type StdClient struct {
+// Client provides convenience methods for working with a DynamoDB table following Single Table Design.
+type Client struct {
     Ddb   *dynamodb.Client
     Table string
 }
 
-func (c *StdClient) Delete(ctx context.Context, pk, sk string) error {
+var _ ClientInterface = (*Client)(nil)
+
+func (c *Client) Delete(ctx context.Context, pk, sk string) error {
     _, err := c.Ddb.DeleteItem(ctx, &dynamodb.DeleteItemInput{
         TableName: &c.Table,
         Key: map[string]types.AttributeValue{
@@ -37,7 +39,7 @@ func (c *StdClient) Delete(ctx context.Context, pk, sk string) error {
     return nil
 }
 
-func (c *StdClient) Get(ctx context.Context, pk, sk string, out any) error {
+func (c *Client) Get(ctx context.Context, pk, sk string, out any) error {
     req := dynamodb.GetItemInput{
         TableName: &c.Table,
         Key: map[string]types.AttributeValue{
@@ -62,7 +64,7 @@ func (c *StdClient) Get(ctx context.Context, pk, sk string, out any) error {
     return nil
 }
 
-func (c *StdClient) Put(ctx context.Context, condition *string, row any) error {
+func (c *Client) Put(ctx context.Context, condition *string, row any) error {
     item, err := attributevalue.MarshalMap(row)
     if err != nil {
         return fmt.Errorf("Put: MarshalMap: %w", err)
@@ -82,8 +84,8 @@ func (c *StdClient) Put(ctx context.Context, condition *string, row any) error {
     return nil
 }
 
-// TransactDeletes uses a DynamoDB transaction to put multiple items in one atomic request.
-func (c *StdClient) TransactDeletes(ctx context.Context, token string, rows ...DeleteRow) error {
+// TransactDeletes uses a DynamoDB transaction to delete multiple items in one atomic request.
+func (c *Client) TransactDeletes(ctx context.Context, token string, rows ...DeleteRow) error {
     if len(rows) > 100 {
         return grpcerrors.MakeInvalidArgumentError("cannot exceed 100 rows")
     }
@@ -94,7 +96,7 @@ func (c *StdClient) TransactDeletes(ctx context.Context, token string, rows ...D
     }
 
     req := dynamodb.TransactWriteItemsInput{
-        TransactItems:      makeTransactionWriteItems2(nil, items, nil),
+        TransactItems:      makeTransactionWriteItems(nil, items, nil),
         ClientRequestToken: &token,
     }
 
@@ -116,7 +118,7 @@ func (c *StdClient) TransactDeletes(ctx context.Context, token string, rows ...D
 }
 
 // TransactPuts uses a DynamoDB transaction to put multiple items in one atomic request.
-func (c *StdClient) TransactPuts(ctx context.Context, token string, rows ...PutRow) error {
+func (c *Client) TransactPuts(ctx context.Context, token string, rows ...PutRow) error {
     if len(rows) > 100 {
         return grpcerrors.MakeInvalidArgumentError("cannot exceed 100 rows")
     }
@@ -127,7 +129,7 @@ func (c *StdClient) TransactPuts(ctx context.Context, token string, rows ...PutR
     }
 
     req := dynamodb.TransactWriteItemsInput{
-        TransactItems:      makeTransactionWriteItems(items),
+        TransactItems:      makeTransactionWriteItems(items, nil, nil),
         ClientRequestToken: &token,
     }
 
@@ -149,7 +151,7 @@ func (c *StdClient) TransactPuts(ctx context.Context, token string, rows ...PutR
 }
 
 //// TransactWrites uses a DynamoDB transaction to put multiple items in one atomic request.
-//func (c *StdClient) TransactWrites(ctx context.Context, token string, puts []PutRow, deletes []DeleteRow, updates []UpdateRow) error {
+//func (c *Client) TransactWrites(ctx context.Context, token string, puts []PutRow, deletes []DeleteRow, updates []UpdateRow) error {
 //    if len(puts)+len(deletes)+len(updates) > 100 {
 //        return grpcerrors.MakeInvalidArgumentError("cannot exceed 100 rows")
 //    }

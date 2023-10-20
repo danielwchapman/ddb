@@ -1,9 +1,7 @@
 package ddb
 
 import (
-    "errors"
     "fmt"
-    "strings"
 
     "github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
     "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
@@ -62,17 +60,7 @@ func makeDeletes(table string, rows ...DeleteRow) ([]types.Delete, error) {
     return items, nil
 }
 
-func makeTransactionWriteItems(puts []types.Put) []types.TransactWriteItem {
-    out := make([]types.TransactWriteItem, len(puts))
-    for i := range puts {
-        out[i] = types.TransactWriteItem{
-            Put: &puts[i],
-        }
-    }
-    return out
-}
-
-func makeTransactionWriteItems2(
+func makeTransactionWriteItems(
     puts []types.Put,
     deletes []types.Delete,
     updates []types.Update,
@@ -95,31 +83,4 @@ func makeTransactionWriteItems2(
         }
     }
     return out
-}
-
-// IsTransactionCanceled checks if the error is a TransactionCanceledException. If it is,
-// it returns improved error message and true.
-func IsTransactionCanceled(err error) (error, bool) {
-    var e *types.TransactionCanceledException
-    if !errors.As(err, &e) {
-        return nil, false
-    }
-    var builder strings.Builder
-    builder.WriteString("Transaction canceled: ")
-    if e.Message != nil {
-        builder.WriteString(*e.Message)
-    }
-    for _, reason := range e.CancellationReasons {
-        if reason.Code != nil {
-            _, _ = fmt.Fprintf(&builder, "; code: %s", *reason.Code)
-        }
-        if reason.Message != nil {
-            _, _ = fmt.Fprintf(&builder, "; message: %s", *reason.Message)
-        }
-        if len(reason.Item) != 0 {
-            // don't print the whole item for data privacy reasons.
-            _, _ = fmt.Fprintf(&builder, "; item: PK: %s; SK: %s", reason.Item["PK"], reason.Item["SK"])
-        }
-    }
-    return errors.New(builder.String()), true
 }

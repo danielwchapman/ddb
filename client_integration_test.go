@@ -15,7 +15,7 @@ import (
     "github.com/google/go-cmp/cmp"
 )
 
-var uut = func() *StdClient {
+var uut = func() *Client {
     if os.Getenv("INTEGRATION") == "" {
         return nil
     }
@@ -31,7 +31,7 @@ var uut = func() *StdClient {
         panic("QUESTIONS_TABLE env var not set")
     }
 
-    return &StdClient{
+    return &Client{
         Ddb:   dynamodb.NewFromConfig(cfg),
         Table: table,
     }
