@@ -13,8 +13,6 @@ import (
     "github.com/danielwchapman/grpcerrors"
 )
 
-// assume composite primary key where columns are named 'PK' and 'SK'
-
 // Client provides convenience methods for working with a DynamoDB table following Single Table Design.
 type Client struct {
     Ddb   *dynamodb.Client

@@ -26,14 +26,3 @@ type Putter interface {
 type TransactPutter interface {
     TransactPuts(ctx context.Context, token string, rows ...PutRow) error
 }
-
-type PutRow struct {
-    Row       any
-    Condition *string
-}
-
-type DeleteRow struct {
-    PK        string
-    SK        string
-    Condition *string
-}
