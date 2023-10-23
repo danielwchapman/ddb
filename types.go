@@ -11,10 +11,8 @@ type PutRow struct {
     Condition *string
 }
 
-type RowType string
-
-// assume composite primary key where columns are named 'PK' and 'SK'
-
+// RowHeader are fields that must exist in every database row. It enforces a composite primary key where
+// columns are named 'PK' and 'SK'. It also enforces a RowType column for identification.
 type RowHeader struct {
     PK      string
     SK      string

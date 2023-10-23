@@ -213,3 +213,52 @@ func TestIntegrationTransactPuts(t *testing.T) {
         }
     })
 }
+
+func TestIntegrationUpdate(t *testing.T) {
+    t.Parallel()
+
+    if os.Getenv("INTEGRATION") == "" {
+        t.Skip("skipping integration tests")
+    }
+
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    t.Run("Update only specific fields", func(t *testing.T) {
+        row := makeRandomTestRow(t.Name())
+
+        t.Cleanup(func() {
+            if err := uut.Delete(ctx, row.PK, row.SK); err != nil {
+                t.Errorf("unexpected error: %v", err)
+            }
+        })
+
+        // put a row so we have something to update
+        if err := uut.Put(ctx, &DoesNotExist, row); err != nil {
+            t.Errorf("unexpected error: %v", err)
+        }
+
+        updates := map[string]any{
+            "TestString": "updated string",
+        }
+
+        if err := uut.Update(ctx, row.PK, row.SK, updates, &Exists); err != nil {
+            t.Errorf("unexpected error: %v", err)
+        }
+
+        var got testRow
+        if err := uut.Get(ctx, row.PK, row.SK, &got); err != nil {
+            t.Errorf("unexpected error: %v", err)
+        }
+
+        row.TestString = "updated string"
+        if diff := cmp.Diff(row, got); diff != "" {
+            t.Errorf("unexpected diff: %s", diff)
+        }
+    })
+
+    // TODO test other update types, embedded fields, slices, etc
+    //t.Run("Update embedded field", func(t *testing.T) {
+    //
+    //})
+}

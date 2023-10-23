@@ -7,6 +7,7 @@ import (
     "fmt"
 
     "github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+    "github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
     "github.com/aws/aws-sdk-go-v2/service/dynamodb"
     "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 
@@ -190,3 +191,46 @@ func (c *Client) TransactPuts(ctx context.Context, token string, rows ...PutRow)
 //
 //    return nil
 //}
+
+// Update updates an item in a table. The row map must contain the updated values for the item. If a key is not
+// in the row map, the value will be unchanged. Careful when working with arrays and maps, as the entire value
+// will be replaced.
+func (c *Client) Update(ctx context.Context, pk, sk string, updates map[string]any, condition *string) error {
+    item, err := attributevalue.MarshalMap(updates)
+    if err != nil {
+        return fmt.Errorf("Update: MarshalMap: %w", err)
+    }
+
+    var builder expression.UpdateBuilder
+
+    for k, v := range item {
+        builder = builder.Set(expression.Name(k), expression.Value(v))
+    }
+
+    expr, err := expression.
+        NewBuilder().
+        WithUpdate(builder).
+        Build()
+
+    if err != nil {
+        return fmt.Errorf("Update: expression builder: %w", err)
+    }
+
+    _, err = c.Ddb.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+        TableName: &c.Table,
+        Key: map[string]types.AttributeValue{
+            "PK": &types.AttributeValueMemberS{Value: pk},
+            "SK": &types.AttributeValueMemberS{Value: sk},
+        },
+        ConditionExpression:       condition,
+        ExpressionAttributeValues: expr.Values(),
+        ExpressionAttributeNames:  expr.Names(),
+        UpdateExpression:          expr.Update(),
+    })
+
+    if err != nil {
+        return fmt.Errorf("Update: %w", err)
+    }
+
+    return nil
+}
