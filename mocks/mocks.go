@@ -96,6 +96,20 @@ func (mr *MockClientInterfaceMockRecorder) TransactPuts(ctx, token interface{}, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransactPuts", reflect.TypeOf((*MockClientInterface)(nil).TransactPuts), varargs...)
 }
 
+// Update mocks base method.
+func (m *MockClientInterface) Update(ctx context.Context, pk, sk string, updates map[string]any, condition *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, pk, sk, updates, condition)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockClientInterfaceMockRecorder) Update(ctx, pk, sk, updates, condition interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockClientInterface)(nil).Update), ctx, pk, sk, updates, condition)
+}
+
 // MockDeleter is a mock of Deleter interface.
 type MockDeleter struct {
 	ctrl     *gomock.Controller
@@ -247,4 +261,41 @@ func (mr *MockTransactPutterMockRecorder) TransactPuts(ctx, token interface{}, r
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, token}, rows...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransactPuts", reflect.TypeOf((*MockTransactPutter)(nil).TransactPuts), varargs...)
+}
+
+// MockUpdater is a mock of Updater interface.
+type MockUpdater struct {
+	ctrl     *gomock.Controller
+	recorder *MockUpdaterMockRecorder
+}
+
+// MockUpdaterMockRecorder is the mock recorder for MockUpdater.
+type MockUpdaterMockRecorder struct {
+	mock *MockUpdater
+}
+
+// NewMockUpdater creates a new mock instance.
+func NewMockUpdater(ctrl *gomock.Controller) *MockUpdater {
+	mock := &MockUpdater{ctrl: ctrl}
+	mock.recorder = &MockUpdaterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockUpdater) EXPECT() *MockUpdaterMockRecorder {
+	return m.recorder
+}
+
+// Update mocks base method.
+func (m *MockUpdater) Update(ctx context.Context, pk, sk string, updates map[string]any, condition *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, pk, sk, updates, condition)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockUpdaterMockRecorder) Update(ctx, pk, sk, updates, condition interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUpdater)(nil).Update), ctx, pk, sk, updates, condition)
 }

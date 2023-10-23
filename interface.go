@@ -9,6 +9,7 @@ type ClientInterface interface {
     Getter
     Putter
     TransactPutter
+    Updater
 }
 
 type Deleter interface {
@@ -25,4 +26,8 @@ type Putter interface {
 
 type TransactPutter interface {
     TransactPuts(ctx context.Context, token string, rows ...PutRow) error
+}
+
+type Updater interface {
+    Update(ctx context.Context, pk, sk string, updates map[string]any, condition *string) error
 }
