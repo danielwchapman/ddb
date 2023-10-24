@@ -97,17 +97,22 @@ func (mr *MockClientInterfaceMockRecorder) TransactPuts(ctx, token interface{}, 
 }
 
 // Update mocks base method.
-func (m *MockClientInterface) Update(ctx context.Context, pk, sk string, updates map[string]any, condition *string) error {
+func (m *MockClientInterface) Update(ctx context.Context, pk, sk string, opts ...ddb.Option) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, pk, sk, updates, condition)
+	varargs := []interface{}{ctx, pk, sk}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Update", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockClientInterfaceMockRecorder) Update(ctx, pk, sk, updates, condition interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) Update(ctx, pk, sk interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockClientInterface)(nil).Update), ctx, pk, sk, updates, condition)
+	varargs := append([]interface{}{ctx, pk, sk}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockClientInterface)(nil).Update), varargs...)
 }
 
 // MockDeleter is a mock of Deleter interface.
@@ -287,15 +292,20 @@ func (m *MockUpdater) EXPECT() *MockUpdaterMockRecorder {
 }
 
 // Update mocks base method.
-func (m *MockUpdater) Update(ctx context.Context, pk, sk string, updates map[string]any, condition *string) error {
+func (m *MockUpdater) Update(ctx context.Context, pk, sk string, opts ...ddb.Option) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, pk, sk, updates, condition)
+	varargs := []interface{}{ctx, pk, sk}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Update", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockUpdaterMockRecorder) Update(ctx, pk, sk, updates, condition interface{}) *gomock.Call {
+func (mr *MockUpdaterMockRecorder) Update(ctx, pk, sk interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUpdater)(nil).Update), ctx, pk, sk, updates, condition)
+	varargs := append([]interface{}{ctx, pk, sk}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUpdater)(nil).Update), varargs...)
 }

@@ -2,151 +2,152 @@
 package ddb
 
 import (
-    "context"
-    "errors"
-    "fmt"
+	"context"
+	"errors"
+	"fmt"
 
-    "github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-    "github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
-    "github.com/aws/aws-sdk-go-v2/service/dynamodb"
-    "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 
-    "github.com/danielwchapman/grpcerrors"
+	"github.com/danielwchapman/grpcerrors"
 )
 
 // Client provides convenience methods for working with a DynamoDB table following Single Table Design.
 type Client struct {
-    Ddb   *dynamodb.Client
-    Table string
+	Ddb   *dynamodb.Client
+	Table string
 }
 
 var _ ClientInterface = (*Client)(nil)
 
 func (c *Client) Delete(ctx context.Context, pk, sk string) error {
-    _, err := c.Ddb.DeleteItem(ctx, &dynamodb.DeleteItemInput{
-        TableName: &c.Table,
-        Key: map[string]types.AttributeValue{
-            "PK": &types.AttributeValueMemberS{Value: pk},
-            "SK": &types.AttributeValueMemberS{Value: sk},
-        },
-    })
+	_, err := c.Ddb.DeleteItem(ctx, &dynamodb.DeleteItemInput{
+		TableName: &c.Table,
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: pk},
+			"SK": &types.AttributeValueMemberS{Value: sk},
+		},
+	})
 
-    if err != nil {
-        return fmt.Errorf("Delete: DeleteItem: %w", err)
-    }
+	if err != nil {
+		return fmt.Errorf("Delete: DeleteItem: %w", err)
+	}
 
-    return nil
+	return nil
 }
 
 func (c *Client) Get(ctx context.Context, pk, sk string, out any) error {
-    req := dynamodb.GetItemInput{
-        TableName: &c.Table,
-        Key: map[string]types.AttributeValue{
-            "PK": &types.AttributeValueMemberS{Value: pk},
-            "SK": &types.AttributeValueMemberS{Value: sk},
-        },
-    }
+	req := dynamodb.GetItemInput{
+		TableName: &c.Table,
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: pk},
+			"SK": &types.AttributeValueMemberS{Value: sk},
+		},
+	}
 
-    resp, err := c.Ddb.GetItem(ctx, &req)
-    if err != nil {
-        return fmt.Errorf("Get: GetItem: %w", err)
-    }
+	resp, err := c.Ddb.GetItem(ctx, &req)
+	if err != nil {
+		return fmt.Errorf("Get: GetItem: %w", err)
+	}
 
-    if len(resp.Item) == 0 {
-        return grpcerrors.ErrNotFound
-    }
+	if len(resp.Item) == 0 {
+		return grpcerrors.ErrNotFound
+	}
 
-    if err := attributevalue.UnmarshalMap(resp.Item, out); err != nil {
-        return fmt.Errorf("Get: UnmarshalMap: %w", err)
-    }
+	if err := attributevalue.UnmarshalMap(resp.Item, out); err != nil {
+		return fmt.Errorf("Get: UnmarshalMap: %w", err)
+	}
 
-    return nil
+	return nil
 }
 
+// TODO Put WithCondition
 func (c *Client) Put(ctx context.Context, condition *string, row any) error {
-    item, err := attributevalue.MarshalMap(row)
-    if err != nil {
-        return fmt.Errorf("Put: MarshalMap: %w", err)
-    }
+	item, err := attributevalue.MarshalMap(row)
+	if err != nil {
+		return fmt.Errorf("Put: MarshalMap: %w", err)
+	}
 
-    req := dynamodb.PutItemInput{
-        TableName:           &c.Table,
-        Item:                item,
-        ConditionExpression: condition,
-    }
+	req := dynamodb.PutItemInput{
+		TableName:           &c.Table,
+		Item:                item,
+		ConditionExpression: condition,
+	}
 
-    if _, err := c.Ddb.PutItem(ctx, &req); err != nil {
-        // TODO check for conditional errors
-        return fmt.Errorf("Put: PutItem: %w", err)
-    }
+	if _, err := c.Ddb.PutItem(ctx, &req); err != nil {
+		// TODO check for conditional errors
+		return fmt.Errorf("Put: PutItem: %w", err)
+	}
 
-    return nil
+	return nil
 }
 
 // TransactDeletes uses a DynamoDB transaction to delete multiple items in one atomic request.
 func (c *Client) TransactDeletes(ctx context.Context, token string, rows ...DeleteRow) error {
-    if len(rows) > 100 {
-        return grpcerrors.MakeInvalidArgumentError("cannot exceed 100 rows")
-    }
+	if len(rows) > 100 {
+		return grpcerrors.MakeInvalidArgumentError("cannot exceed 100 rows")
+	}
 
-    items, err := makeDeletes(c.Table, rows...)
-    if err != nil {
-        return fmt.Errorf("TransactionPuts: %w", err)
-    }
+	items, err := makeDeletes(c.Table, rows...)
+	if err != nil {
+		return fmt.Errorf("TransactionPuts: %w", err)
+	}
 
-    req := dynamodb.TransactWriteItemsInput{
-        TransactItems:      makeTransactionWriteItems(nil, items, nil),
-        ClientRequestToken: &token,
-    }
+	req := dynamodb.TransactWriteItemsInput{
+		TransactItems:      makeTransactionWriteItems(nil, items, nil),
+		ClientRequestToken: &token,
+	}
 
-    if _, err := c.Ddb.TransactWriteItems(ctx, &req); err != nil {
-        var condFailedErr *types.ConditionalCheckFailedException
-        if errors.As(err, &condFailedErr) {
-            return fmt.Errorf("TransactPuts: TransactWriteItems: Condition failed %w", condFailedErr)
-        }
+	if _, err := c.Ddb.TransactWriteItems(ctx, &req); err != nil {
+		var condFailedErr *types.ConditionalCheckFailedException
+		if errors.As(err, &condFailedErr) {
+			return fmt.Errorf("TransactPuts: TransactWriteItems: Condition failed %w", condFailedErr)
+		}
 
-        // TODO tidy up
-        if canceledErr, ok := IsTransactionCanceled(err); ok {
-            return fmt.Errorf("TransactPuts: TransactWriteItems: Canceled Transaction: %w", canceledErr)
-        }
+		// TODO tidy up
+		if canceledErr, ok := IsTransactionCanceled(err); ok {
+			return fmt.Errorf("TransactPuts: TransactWriteItems: Canceled Transaction: %w", canceledErr)
+		}
 
-        return fmt.Errorf("TransactPuts: TransactWriteItems: %w", err)
-    }
+		return fmt.Errorf("TransactPuts: TransactWriteItems: %w", err)
+	}
 
-    return nil
+	return nil
 }
 
 // TransactPuts uses a DynamoDB transaction to put multiple items in one atomic request.
 func (c *Client) TransactPuts(ctx context.Context, token string, rows ...PutRow) error {
-    if len(rows) > 100 {
-        return grpcerrors.MakeInvalidArgumentError("cannot exceed 100 rows")
-    }
+	if len(rows) > 100 {
+		return grpcerrors.MakeInvalidArgumentError("cannot exceed 100 rows")
+	}
 
-    items, err := makePuts(c.Table, rows...)
-    if err != nil {
-        return fmt.Errorf("TransactionPuts: %w", err)
-    }
+	items, err := makePuts(c.Table, rows...)
+	if err != nil {
+		return fmt.Errorf("TransactionPuts: %w", err)
+	}
 
-    req := dynamodb.TransactWriteItemsInput{
-        TransactItems:      makeTransactionWriteItems(items, nil, nil),
-        ClientRequestToken: &token,
-    }
+	req := dynamodb.TransactWriteItemsInput{
+		TransactItems:      makeTransactionWriteItems(items, nil, nil),
+		ClientRequestToken: &token,
+	}
 
-    if _, err := c.Ddb.TransactWriteItems(ctx, &req); err != nil {
-        var condFailedErr *types.ConditionalCheckFailedException
-        if errors.As(err, &condFailedErr) {
-            return fmt.Errorf("TransactPuts: TransactWriteItems: Condition failed %w", condFailedErr)
-        }
+	if _, err := c.Ddb.TransactWriteItems(ctx, &req); err != nil {
+		var condFailedErr *types.ConditionalCheckFailedException
+		if errors.As(err, &condFailedErr) {
+			return fmt.Errorf("TransactPuts: TransactWriteItems: Condition failed %w", condFailedErr)
+		}
 
-        // TODO tidy up
-        if canceledErr, ok := IsTransactionCanceled(err); ok {
-            return fmt.Errorf("TransactPuts: TransactWriteItems: Canceled Transaction: %w", canceledErr)
-        }
+		// TODO tidy up
+		if canceledErr, ok := IsTransactionCanceled(err); ok {
+			return fmt.Errorf("TransactPuts: TransactWriteItems: Canceled Transaction: %w", canceledErr)
+		}
 
-        return fmt.Errorf("TransactPuts: TransactWriteItems: %w", err)
-    }
+		return fmt.Errorf("TransactPuts: TransactWriteItems: %w", err)
+	}
 
-    return nil
+	return nil
 }
 
 //// TransactWrites uses a DynamoDB transaction to put multiple items in one atomic request.
@@ -195,42 +196,58 @@ func (c *Client) TransactPuts(ctx context.Context, token string, rows ...PutRow)
 // Update updates an item in a table. The row map must contain the updated values for the item. If a key is not
 // in the row map, the value will be unchanged. Careful when working with arrays and maps, as the entire value
 // will be replaced.
-func (c *Client) Update(ctx context.Context, pk, sk string, updates map[string]any, condition *string) error {
-    item, err := attributevalue.MarshalMap(updates)
-    if err != nil {
-        return fmt.Errorf("Update: MarshalMap: %w", err)
-    }
+func (c *Client) Update(ctx context.Context, pk, sk string, opts ...Option) error {
+	var updateOptions options
+	for _, opt := range opts {
+		err := opt(&updateOptions)
+		if err != nil {
+			return err
+		}
+	}
 
-    var builder expression.UpdateBuilder
+	builder := expression.NewBuilder()
+	if updateOptions.conditionsCount > 0 {
+		builder = builder.WithCondition(updateOptions.conditions)
+	}
 
-    for k, v := range item {
-        builder = builder.Set(expression.Name(k), expression.Value(v))
-    }
+	expr, err := builder.
+		WithUpdate(updateOptions.updates).
+		Build()
 
-    expr, err := expression.
-        NewBuilder().
-        WithUpdate(builder).
-        Build()
+	if err != nil {
+		return fmt.Errorf("Update: expression builder: %w", err)
+	}
 
-    if err != nil {
-        return fmt.Errorf("Update: expression builder: %w", err)
-    }
+	req := dynamodb.UpdateItemInput{
+		TableName: &c.Table,
+		Key: map[string]types.AttributeValue{
+			"PK": &types.AttributeValueMemberS{Value: pk},
+			"SK": &types.AttributeValueMemberS{Value: sk},
+		},
+		ExpressionAttributeValues: expr.Values(),
+		ExpressionAttributeNames:  expr.Names(),
+		UpdateExpression:          expr.Update(),
+		ReturnValues:              updateOptions.returnValues,
+	}
 
-    _, err = c.Ddb.UpdateItem(ctx, &dynamodb.UpdateItemInput{
-        TableName: &c.Table,
-        Key: map[string]types.AttributeValue{
-            "PK": &types.AttributeValueMemberS{Value: pk},
-            "SK": &types.AttributeValueMemberS{Value: sk},
-        },
-        ConditionExpression:       condition,
-        ExpressionAttributeValues: expr.Values(),
-        ExpressionAttributeNames:  expr.Names(),
-        UpdateExpression:          expr.Update(),
-    })
+	if updateOptions.conditionsCount > 0 {
+		req.ConditionExpression = expr.Condition()
+	}
 
-    if err != nil {
-        return fmt.Errorf("Update: %w", err)
-    }
+	out, err := c.Ddb.UpdateItem(ctx, &req)
 
-    return nil
+	if err != nil {
+		// TODO add conditional check failed error and map to
+		// grpcerrors.ErrNotFound or grpcerrors.AlreadyExists
+
+		return fmt.Errorf("Update: %w", err)
+	}
+
+	if updateOptions.returnValues != "" {
+		if err := attributevalue.UnmarshalMap(out.Attributes, updateOptions.returnValuesOut); err != nil {
+			return fmt.Errorf("Update: UnmarshalMap: %w", err)
+		}
+	}
+
+	return nil
 }
