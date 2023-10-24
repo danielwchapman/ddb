@@ -63,27 +63,6 @@ func (c *Client) Get(ctx context.Context, pk, sk string, out any) error {
 	return nil
 }
 
-// TODO Put WithCondition
-//func (c *Client) Put(ctx context.Context, condition *string, row any) error {
-//	item, err := attributevalue.MarshalMap(row)
-//	if err != nil {
-//		return fmt.Errorf("Put: MarshalMap: %w", err)
-//	}
-//
-//	req := dynamodb.PutItemInput{
-//		TableName:           &c.Table,
-//		Item:                item,
-//		ConditionExpression: condition,
-//	}
-//
-//	if _, err := c.Ddb.PutItem(ctx, &req); err != nil {
-//		// TODO check for conditional errors
-//		return fmt.Errorf("Put: PutItem: %w", err)
-//	}
-//
-//	return nil
-//}
-
 func (c *Client) Put(ctx context.Context, row any, opts ...Option) error {
 	var putOptions options
 	for _, opt := range opts {
@@ -91,6 +70,10 @@ func (c *Client) Put(ctx context.Context, row any, opts ...Option) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if putOptions.updatesCount > 0 {
+		return grpcerrors.MakeInvalidArgumentError("put cannot update items with options")
 	}
 
 	var (
@@ -124,11 +107,19 @@ func (c *Client) Put(ctx context.Context, row any, opts ...Option) error {
 		ConditionExpression:       condition,
 		ExpressionAttributeNames:  expressionAttributeNames,
 		ExpressionAttributeValues: expressionAttributeValues,
+		ReturnValues:              putOptions.returnValues,
 	}
 
-	if _, err := c.Ddb.PutItem(ctx, &req); err != nil {
+	out, err := c.Ddb.PutItem(ctx, &req)
+	if err != nil {
 		// TODO check for conditional errors
 		return fmt.Errorf("Put: PutItem: %w", err)
+	}
+
+	if putOptions.returnValues != "" {
+		if err := attributevalue.UnmarshalMap(out.Attributes, putOptions.returnValuesOut); err != nil {
+			return fmt.Errorf("Put: UnmarshalMap: %w", err)
+		}
 	}
 
 	return nil

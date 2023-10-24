@@ -131,6 +131,29 @@ func TestIntegrationPut(t *testing.T) {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
+
+	t.Run("Put return values all old", func(t *testing.T) {
+		want := makeRandomTestRow(t.Name())
+
+		t.Cleanup(func() {
+			if err := uut.Delete(ctx, want.PK, want.SK); err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+
+		if err := uut.Put(ctx, want); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+
+		var got testRow
+		if err := uut.Put(ctx, want, WithReturnValues(types.ReturnValueAllOld, &got)); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("unexpected diff: %s", diff)
+		}
+	})
 }
 
 func TestIntegrationTransactPuts(t *testing.T) {

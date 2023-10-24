@@ -10,6 +10,7 @@ import (
 
 type options struct {
 	updates         expression.UpdateBuilder
+	updatesCount    int
 	conditions      expression.ConditionBuilder
 	conditionsCount int
 	returnValues    types.ReturnValue
@@ -28,6 +29,8 @@ func WithFieldUpdates(updates map[string]any) Option {
 		for k, v := range item {
 			options.updates = options.updates.Set(expression.Name(k), expression.Value(v))
 		}
+
+		options.updatesCount += len(item)
 
 		return nil
 	}
