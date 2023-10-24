@@ -284,6 +284,10 @@ func (c *Client) Update(ctx context.Context, pk, sk string, opts ...Option) erro
 		ReturnValues:              updateOptions.returnValues,
 	}
 
+	if req.UpdateExpression == nil || *req.UpdateExpression == "" {
+		return fmt.Errorf("Update: %w", grpcerrors.MakeInvalidArgumentError("no updates to apply"))
+	}
+
 	out, err := c.Ddb.UpdateItem(ctx, &req)
 
 	if err != nil {

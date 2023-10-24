@@ -62,7 +62,7 @@ func makeRandomTestRow(suffix string) testRow {
 		TestBool:   true,
 		TestTime:   time.Now(),
 		TestSlice:  []string{"a", "b", "c"},
-		TestMap:    map[string]string{"a": "b", "c": "d"},
+		TestMap:    map[string]string{"a": "a1", "b": "b1"},
 	}
 }
 
@@ -279,9 +279,33 @@ func TestIntegrationUpdate(t *testing.T) {
 		}
 	})
 
-	t.Run("Update embedded field", func(t *testing.T) {
-		// TODO
-		t.Skip("needs implemented")
+	t.Run("Update embedded map", func(t *testing.T) {
+		row := makeRandomTestRow(t.Name())
+
+		t.Cleanup(func() {
+			if err := uut.Delete(ctx, row.PK, row.SK); err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+
+		// put a row so we have something to update
+		if err := uut.Put(ctx, row, WithItemNotExist()); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+
+		updates := map[string]any{
+			"TestMap.a": "a2",
+		}
+
+		var got testRow
+		if err := uut.Update(ctx, row.PK, row.SK, WithFieldUpdates(updates), WithReturnValues(types.ReturnValueAllNew, &got)); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+
+		row.TestMap["a"] = "a2"
+		if diff := cmp.Diff(row, got); diff != "" {
+			t.Errorf("unexpected diff: %s", diff)
+		}
 	})
 
 	t.Run("Update slice", func(t *testing.T) {
