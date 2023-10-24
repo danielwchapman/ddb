@@ -103,7 +103,7 @@ func TestIntegrationPut(t *testing.T) {
 			}
 		})
 
-		if err := uut.Put(ctx, nil, want); err != nil {
+		if err := uut.Put(ctx, want); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 
@@ -117,7 +117,7 @@ func TestIntegrationPut(t *testing.T) {
 		}
 	})
 
-	t.Run("Put condition already exists returns correct error type", func(t *testing.T) {
+	t.Run("Put ItemExists condition honored", func(t *testing.T) {
 		row := makeRandomTestRow(t.Name())
 
 		t.Cleanup(func() {
@@ -126,14 +126,9 @@ func TestIntegrationPut(t *testing.T) {
 			}
 		})
 
-		// First Put should succeed
-		if err := uut.Put(ctx, &DoesNotExist, row); err != nil {
+		// should fail because item does not exist
+		if err := uut.Put(ctx, row, WithItemExists()); err == nil {
 			t.Errorf("unexpected error: %v", err)
-		}
-
-		// Second Put should fail
-		if err := uut.Put(ctx, &DoesNotExist, row); err == nil {
-			t.Errorf("expected error because row alrady exists, but got nil")
 		}
 	})
 }
@@ -235,7 +230,7 @@ func TestIntegrationUpdate(t *testing.T) {
 		})
 
 		// put a row so we have something to update
-		if err := uut.Put(ctx, &DoesNotExist, row); err != nil {
+		if err := uut.Put(ctx, row, WithItemNotExist()); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 
@@ -298,7 +293,7 @@ func TestIntegrationUpdate(t *testing.T) {
 		})
 
 		// put a row so we have something to update
-		if err := uut.Put(ctx, &DoesNotExist, row); err != nil {
+		if err := uut.Put(ctx, row, WithItemNotExist()); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 
@@ -346,7 +341,7 @@ func TestIntegrationUpdate(t *testing.T) {
 		})
 
 		// put a row so we have something to update
-		if err := uut.Put(ctx, &DoesNotExist, row); err != nil {
+		if err := uut.Put(ctx, row, WithItemNotExist()); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 

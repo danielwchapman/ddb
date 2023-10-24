@@ -21,7 +21,7 @@ type Getter interface {
 }
 
 type Putter interface {
-	Put(ctx context.Context, condition *string, row any) error
+	Put(ctx context.Context, row any, opts ...Option) error
 }
 
 type TransactPutter interface {

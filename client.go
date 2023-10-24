@@ -64,16 +64,66 @@ func (c *Client) Get(ctx context.Context, pk, sk string, out any) error {
 }
 
 // TODO Put WithCondition
-func (c *Client) Put(ctx context.Context, condition *string, row any) error {
+//func (c *Client) Put(ctx context.Context, condition *string, row any) error {
+//	item, err := attributevalue.MarshalMap(row)
+//	if err != nil {
+//		return fmt.Errorf("Put: MarshalMap: %w", err)
+//	}
+//
+//	req := dynamodb.PutItemInput{
+//		TableName:           &c.Table,
+//		Item:                item,
+//		ConditionExpression: condition,
+//	}
+//
+//	if _, err := c.Ddb.PutItem(ctx, &req); err != nil {
+//		// TODO check for conditional errors
+//		return fmt.Errorf("Put: PutItem: %w", err)
+//	}
+//
+//	return nil
+//}
+
+func (c *Client) Put(ctx context.Context, row any, opts ...Option) error {
+	var putOptions options
+	for _, opt := range opts {
+		err := opt(&putOptions)
+		if err != nil {
+			return err
+		}
+	}
+
+	var (
+		expressionAttributeValues map[string]types.AttributeValue
+		expressionAttributeNames  map[string]string
+		condition                 *string
+	)
+
+	if putOptions.conditionsCount > 0 {
+		expr, err := expression.NewBuilder().
+			WithCondition(putOptions.conditions).
+			Build()
+
+		if err != nil {
+			return fmt.Errorf("Put: expression builder: %w", err)
+		}
+
+		expressionAttributeValues = expr.Values()
+		expressionAttributeNames = expr.Names()
+		condition = expr.Condition()
+	}
+
 	item, err := attributevalue.MarshalMap(row)
 	if err != nil {
 		return fmt.Errorf("Put: MarshalMap: %w", err)
 	}
 
 	req := dynamodb.PutItemInput{
-		TableName:           &c.Table,
-		Item:                item,
-		ConditionExpression: condition,
+		TableName:                 &c.Table,
+		Item:                      item,
+		ConditionExpression:       condition,
+		ExpressionAttributeNames:  expressionAttributeNames,
+		ExpressionAttributeValues: expressionAttributeValues,
 	}
 
 	if _, err := c.Ddb.PutItem(ctx, &req); err != nil {
@@ -92,7 +142,7 @@ func (c *Client) TransactDeletes(ctx context.Context, token string, rows ...Dele
 
 	items, err := makeDeletes(c.Table, rows...)
 	if err != nil {
-		return fmt.Errorf("TransactionPuts: %w", err)
+		return fmt.Errorf("TransactDeletes: %w", err)
 	}
 
 	req := dynamodb.TransactWriteItemsInput{
@@ -103,15 +153,15 @@ func (c *Client) TransactDeletes(ctx context.Context, token string, rows ...Dele
 	if _, err := c.Ddb.TransactWriteItems(ctx, &req); err != nil {
 		var condFailedErr *types.ConditionalCheckFailedException
 		if errors.As(err, &condFailedErr) {
-			return fmt.Errorf("TransactPuts: TransactWriteItems: Condition failed %w", condFailedErr)
+			return fmt.Errorf("TransactDeletes: TransactWriteItems: Condition failed %w", condFailedErr)
 		}
 
 		// TODO tidy up
 		if canceledErr, ok := IsTransactionCanceled(err); ok {
-			return fmt.Errorf("TransactPuts: TransactWriteItems: Canceled Transaction: %w", canceledErr)
+			return fmt.Errorf("TransactDeletes: TransactWriteItems: Canceled Transaction: %w", canceledErr)
 		}
 
-		return fmt.Errorf("TransactPuts: TransactWriteItems: %w", err)
+		return fmt.Errorf("TransactDeletes: TransactWriteItems: %w", err)
 	}
 
 	return nil
@@ -205,17 +255,29 @@ func (c *Client) Update(ctx context.Context, pk, sk string, opts ...Option) erro
 		}
 	}
 
-	builder := expression.NewBuilder()
-	if updateOptions.conditionsCount > 0 {
-		builder = builder.WithCondition(updateOptions.conditions)
-	}
+	var (
+		conditionExpression *string
+		expr                expression.Expression
+		err                 error
+	)
 
-	expr, err := builder.
-		WithUpdate(updateOptions.updates).
-		Build()
+	if updateOptions.conditionsCount > 0 {
+		expr, err = expression.NewBuilder().
+			WithCondition(updateOptions.conditions).
+			WithUpdate(updateOptions.updates).
+			Build()
+	} else {
+		expr, err = expression.NewBuilder().
+			WithUpdate(updateOptions.updates).
+			Build()
+	}
 
 	if err != nil {
 		return fmt.Errorf("Update: expression builder: %w", err)
+	}
+
+	if updateOptions.conditionsCount > 0 {
+		conditionExpression = expr.Condition()
 	}
 
 	req := dynamodb.UpdateItemInput{
@@ -224,14 +286,11 @@ func (c *Client) Update(ctx context.Context, pk, sk string, opts ...Option) erro
 			"PK": &types.AttributeValueMemberS{Value: pk},
 			"SK": &types.AttributeValueMemberS{Value: sk},
 		},
+		ConditionExpression:       conditionExpression,
 		ExpressionAttributeValues: expr.Values(),
 		ExpressionAttributeNames:  expr.Names(),
 		UpdateExpression:          expr.Update(),
 		ReturnValues:              updateOptions.returnValues,
-	}
-
-	if updateOptions.conditionsCount > 0 {
-		req.ConditionExpression = expr.Condition()
 	}
 
 	out, err := c.Ddb.UpdateItem(ctx, &req)

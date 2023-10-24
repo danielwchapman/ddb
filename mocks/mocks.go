@@ -64,17 +64,22 @@ func (mr *MockClientInterfaceMockRecorder) Get(ctx, pk, sk, out interface{}) *go
 }
 
 // Put mocks base method.
-func (m *MockClientInterface) Put(ctx context.Context, condition *string, row any) error {
+func (m *MockClientInterface) Put(ctx context.Context, row any, opts ...ddb.Option) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Put", ctx, condition, row)
+	varargs := []interface{}{ctx, row}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Put", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Put indicates an expected call of Put.
-func (mr *MockClientInterfaceMockRecorder) Put(ctx, condition, row interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) Put(ctx, row interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockClientInterface)(nil).Put), ctx, condition, row)
+	varargs := append([]interface{}{ctx, row}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockClientInterface)(nil).Put), varargs...)
 }
 
 // TransactPuts mocks base method.
@@ -213,17 +218,22 @@ func (m *MockPutter) EXPECT() *MockPutterMockRecorder {
 }
 
 // Put mocks base method.
-func (m *MockPutter) Put(ctx context.Context, condition *string, row any) error {
+func (m *MockPutter) Put(ctx context.Context, row any, opts ...ddb.Option) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Put", ctx, condition, row)
+	varargs := []interface{}{ctx, row}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Put", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Put indicates an expected call of Put.
-func (mr *MockPutterMockRecorder) Put(ctx, condition, row interface{}) *gomock.Call {
+func (mr *MockPutterMockRecorder) Put(ctx, row interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockPutter)(nil).Put), ctx, condition, row)
+	varargs := append([]interface{}{ctx, row}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockPutter)(nil).Put), varargs...)
 }
 
 // MockTransactPutter is a mock of TransactPutter interface.
