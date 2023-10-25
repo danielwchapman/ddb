@@ -82,6 +82,25 @@ func (mr *MockClientInterfaceMockRecorder) Put(ctx, row interface{}, opts ...int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockClientInterface)(nil).Put), varargs...)
 }
 
+// Query mocks base method.
+func (m *MockClientInterface) Query(ctx context.Context, pk, skPrefix string, opts ...ddb.Option) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, pk, skPrefix}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Query", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Query indicates an expected call of Query.
+func (mr *MockClientInterfaceMockRecorder) Query(ctx, pk, skPrefix interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, pk, skPrefix}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockClientInterface)(nil).Query), varargs...)
+}
+
 // TransactPuts mocks base method.
 func (m *MockClientInterface) TransactPuts(ctx context.Context, token string, rows ...ddb.PutRow) error {
 	m.ctrl.T.Helper()

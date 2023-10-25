@@ -8,6 +8,7 @@ type ClientInterface interface {
     Deleter
     Getter
     Putter
+    Queryer
     TransactPutter
     Updater
 }
