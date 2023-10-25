@@ -8,6 +8,11 @@ import (
     "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
+var (
+    ErrAlreadyExists = errors.New("already exists")
+    ErrNotFound      = errors.New("not found")
+)
+
 // IsTransactionCanceled checks if the error is a TransactionCanceledException and
 // returns improved error message and true if it is.
 func IsTransactionCanceled(err error) (error, bool) {

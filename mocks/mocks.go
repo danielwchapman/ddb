@@ -236,6 +236,48 @@ func (mr *MockPutterMockRecorder) Put(ctx, row interface{}, opts ...interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockPutter)(nil).Put), varargs...)
 }
 
+// MockQueryer is a mock of Queryer interface.
+type MockQueryer struct {
+	ctrl     *gomock.Controller
+	recorder *MockQueryerMockRecorder
+}
+
+// MockQueryerMockRecorder is the mock recorder for MockQueryer.
+type MockQueryerMockRecorder struct {
+	mock *MockQueryer
+}
+
+// NewMockQueryer creates a new mock instance.
+func NewMockQueryer(ctrl *gomock.Controller) *MockQueryer {
+	mock := &MockQueryer{ctrl: ctrl}
+	mock.recorder = &MockQueryerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockQueryer) EXPECT() *MockQueryerMockRecorder {
+	return m.recorder
+}
+
+// Query mocks base method.
+func (m *MockQueryer) Query(ctx context.Context, pk, skPrefix string, opts ...ddb.Option) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, pk, skPrefix}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Query", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Query indicates an expected call of Query.
+func (mr *MockQueryerMockRecorder) Query(ctx, pk, skPrefix interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, pk, skPrefix}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockQueryer)(nil).Query), varargs...)
+}
+
 // MockTransactPutter is a mock of TransactPutter interface.
 type MockTransactPutter struct {
 	ctrl     *gomock.Controller
