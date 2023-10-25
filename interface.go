@@ -26,7 +26,7 @@ type Putter interface {
 }
 
 type Queryer interface {
-    Query(ctx context.Context, pk, skPrefix string, opts ...Option) error
+    Query(ctx context.Context, pk, skBeginsWith string, out any, opts ...Option) error
 }
 
 type TransactPutter interface {

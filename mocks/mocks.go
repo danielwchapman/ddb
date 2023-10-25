@@ -83,9 +83,9 @@ func (mr *MockClientInterfaceMockRecorder) Put(ctx, row interface{}, opts ...int
 }
 
 // Query mocks base method.
-func (m *MockClientInterface) Query(ctx context.Context, pk, skPrefix string, opts ...ddb.Option) error {
+func (m *MockClientInterface) Query(ctx context.Context, pk, skBeginsWith string, out any, opts ...ddb.Option) error {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, pk, skPrefix}
+	varargs := []interface{}{ctx, pk, skBeginsWith, out}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -95,9 +95,9 @@ func (m *MockClientInterface) Query(ctx context.Context, pk, skPrefix string, op
 }
 
 // Query indicates an expected call of Query.
-func (mr *MockClientInterfaceMockRecorder) Query(ctx, pk, skPrefix interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) Query(ctx, pk, skBeginsWith, out interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, pk, skPrefix}, opts...)
+	varargs := append([]interface{}{ctx, pk, skBeginsWith, out}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockClientInterface)(nil).Query), varargs...)
 }
 
@@ -279,9 +279,9 @@ func (m *MockQueryer) EXPECT() *MockQueryerMockRecorder {
 }
 
 // Query mocks base method.
-func (m *MockQueryer) Query(ctx context.Context, pk, skPrefix string, opts ...ddb.Option) error {
+func (m *MockQueryer) Query(ctx context.Context, pk, skBeginsWith string, out any, opts ...ddb.Option) error {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, pk, skPrefix}
+	varargs := []interface{}{ctx, pk, skBeginsWith, out}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
@@ -291,9 +291,9 @@ func (m *MockQueryer) Query(ctx context.Context, pk, skPrefix string, opts ...dd
 }
 
 // Query indicates an expected call of Query.
-func (mr *MockQueryerMockRecorder) Query(ctx, pk, skPrefix interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockQueryerMockRecorder) Query(ctx, pk, skBeginsWith, out interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, pk, skPrefix}, opts...)
+	varargs := append([]interface{}{ctx, pk, skBeginsWith, out}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*MockQueryer)(nil).Query), varargs...)
 }
 
