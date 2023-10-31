@@ -22,6 +22,7 @@ type options struct {
 	startKey      map[string]types.AttributeValue
 	pageOut       *string
 	scanBackwards bool
+	indexName     string
 }
 
 type Option func(options *options) error
@@ -40,6 +41,13 @@ func WithFieldUpdates(updates map[string]any) Option {
 
 		options.updatesCount += len(item)
 
+		return nil
+	}
+}
+
+func WithIndexGSI1() Option {
+	return func(options *options) error {
+		options.indexName = "GSI1"
 		return nil
 	}
 }

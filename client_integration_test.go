@@ -329,6 +329,16 @@ func TestIntegrationQuery(t *testing.T) {
 		// TODO
 		t.Skip("needs implemented")
 	})
+
+	t.Run("Ignore Zero PageSize", func(t *testing.T) {
+		var got []testRow
+		if err := uut.Query(ctx, testRows[0].PK, "", &got, WithPageSize(0)); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if len(got) <= 1 {
+			t.Errorf("expected more than one row, got: %v", len(got))
+		}
+	})
 }
 
 func TestIntegrationTransactPuts(t *testing.T) {

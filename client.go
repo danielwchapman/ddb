@@ -73,9 +73,9 @@ func (c *Client) Query(ctx context.Context, pk, skBeginsWith string, out any, op
 		}
 	}
 
-	keyCondition := expression.Key("PK").Equal(expression.Value(pk))
+	keyCondition := expression.Key(queryOptions.indexName + "PK").Equal(expression.Value(pk))
 	if skBeginsWith != "" {
-		keyCondition = keyCondition.And(expression.Key("SK").BeginsWith(skBeginsWith))
+		keyCondition = keyCondition.And(expression.Key(queryOptions.indexName + "SK").BeginsWith(skBeginsWith))
 	}
 
 	expr, err := expression.
