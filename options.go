@@ -23,6 +23,8 @@ type options struct {
 	pageOut       *string
 	scanBackwards bool
 	indexName     string
+	pkName        string
+	skName        string
 }
 
 type Option func(options *options) error
@@ -45,11 +47,33 @@ func WithFieldUpdates(updates map[string]any) Option {
 	}
 }
 
-func WithIndexGSI1() Option {
+func WithIndex(pkName, skName, indexName string) Option {
 	return func(options *options) error {
-		options.indexName = "GSI1"
+		options.indexName = indexName
+		options.pkName = pkName
+		options.skName = skName
 		return nil
 	}
+}
+
+func WithIndexGSI1() Option {
+	return WithIndex(gsi1pk, gsi1sk, indexNameGSI1)
+}
+
+func WithIndexGSI2() Option {
+	return WithIndex(gsi2pk, gsi2sk, indexNameGSI2)
+}
+
+func WithIndexGSI3() Option {
+	return WithIndex(gsi3pk, gsi3sk, indexNameGSI3)
+}
+
+func WithIndexGSI4() Option {
+	return WithIndex(gsi4pk, gsi4sk, indexNameGSI4)
+}
+
+func WithIndexGSI5() Option {
+	return WithIndex(gsi5pk, gsi5sk, indexNameGSI5)
 }
 
 // WithItemExists adds a condition that the item exists. For use with Update and Put.

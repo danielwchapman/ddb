@@ -12,6 +12,28 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
+const (
+	defaultPK = "PK"
+	defaultSK = "SK"
+
+	indexNameGSI1 = "GSI1"
+	indexNameGSI2 = "GSI2"
+	indexNameGSI3 = "GSI3"
+	indexNameGSI4 = "GSI4"
+	indexNameGSI5 = "GSI5"
+
+	gsi1pk = "GSI1PK"
+	gsi1sk = "GSI1SK"
+	gsi2pk = "GSI2PK"
+	gsi2sk = "GSI2SK"
+	gsi3pk = "GSI3PK"
+	gsi3sk = "GSI3SK"
+	gsi4pk = "GSI4PK"
+	gsi4sk = "GSI4SK"
+	gsi5pk = "GSI5PK"
+	gsi5sk = "GSI5SK"
+)
+
 // Client provides convenience methods for working with a DynamoDB table following Single Table Design.
 type Client struct {
 	Ddb   *dynamodb.Client
@@ -24,8 +46,8 @@ func (c *Client) Delete(ctx context.Context, pk, sk string) error {
 	_, err := c.Ddb.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: &c.Table,
 		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: pk},
-			"SK": &types.AttributeValueMemberS{Value: sk},
+			defaultPK: &types.AttributeValueMemberS{Value: pk},
+			defaultSK: &types.AttributeValueMemberS{Value: sk},
 		},
 	})
 
@@ -40,8 +62,8 @@ func (c *Client) Get(ctx context.Context, pk, sk string, out any) error {
 	req := dynamodb.GetItemInput{
 		TableName: &c.Table,
 		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: pk},
-			"SK": &types.AttributeValueMemberS{Value: sk},
+			defaultPK: &types.AttributeValueMemberS{Value: pk},
+			defaultSK: &types.AttributeValueMemberS{Value: sk},
 		},
 	}
 
@@ -73,9 +95,19 @@ func (c *Client) Query(ctx context.Context, pk, skBeginsWith string, out any, op
 		}
 	}
 
-	keyCondition := expression.Key(queryOptions.indexName + "PK").Equal(expression.Value(pk))
+	var (
+		pkColumnName = defaultPK
+		skColumnName = defaultSK
+	)
+
+	if queryOptions.indexName != "" {
+		pkColumnName = queryOptions.pkName
+		skColumnName = queryOptions.skName
+	}
+
+	keyCondition := expression.Key(pkColumnName).Equal(expression.Value(pk))
 	if skBeginsWith != "" {
-		keyCondition = keyCondition.And(expression.Key(queryOptions.indexName + "SK").BeginsWith(skBeginsWith))
+		keyCondition = keyCondition.And(expression.Key(skColumnName).BeginsWith(skBeginsWith))
 	}
 
 	expr, err := expression.
@@ -327,8 +359,8 @@ func (c *Client) Update(ctx context.Context, pk, sk string, opts ...Option) erro
 	req := dynamodb.UpdateItemInput{
 		TableName: &c.Table,
 		Key: map[string]types.AttributeValue{
-			"PK": &types.AttributeValueMemberS{Value: pk},
-			"SK": &types.AttributeValueMemberS{Value: sk},
+			defaultPK: &types.AttributeValueMemberS{Value: pk},
+			defaultSK: &types.AttributeValueMemberS{Value: sk},
 		},
 		ConditionExpression:       conditionExpression,
 		ExpressionAttributeValues: expr.Values(),
