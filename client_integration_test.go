@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/google/uuid"
@@ -33,7 +34,7 @@ var uut = func() *Client {
 	table := os.Getenv("TEST_TABLE")
 
 	if table == "" {
-		panic("QUESTIONS_TABLE env var not set")
+		panic("TEST_TABLE env var not set")
 	}
 
 	return &Client{
@@ -78,7 +79,7 @@ func makeQueryTestRows(pkSuffix string, count int) []testRow {
 			PK:         "PK#" + pkSuffix,
 			SK:         fmt.Sprintf("SK#%d", i),
 			TestString: "test string",
-			TestInt:    123,
+			TestInt:    i,
 			TestFloat:  123.456,
 			TestBool:   true,
 			TestTime:   now,
@@ -187,8 +188,7 @@ func TestIntegrationQuery(t *testing.T) {
 		t.Skip("skipping integration tests")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 
 	testRows := makeQueryTestRows(t.Name(), 8)
 	testTime, err := time.Parse(time.RFC3339, "2023-10-25T09:17:47.855071-04:00")
@@ -199,21 +199,21 @@ func TestIntegrationQuery(t *testing.T) {
 		testRows[i].TestTime = testTime
 	}
 
-	//t.Cleanup(func() {
-	//    // TODO use batch delete when ready
-	//    for i := range testRows {
-	//        if err := uut.Delete(ctx, testRows[i].PK, testRows[i].SK); err != nil {
-	//            t.Errorf("unexpected error: %v", err)
-	//        }
-	//    }
-	//})
+	t.Cleanup(func() {
+		// TODO use batch delete when ready
+		for i := range testRows {
+			if err := uut.Delete(ctx, testRows[i].PK, testRows[i].SK); err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		}
+	})
 
 	// TODO use BatchWriteItems when it's ready
-	//for i := range testRows {
-	//    if err := uut.Put(ctx, testRows[i]); err != nil {
-	//        t.Errorf("unexpected error: %v", err)
-	//    }
-	//}
+	for i := range testRows {
+		if err := uut.Put(ctx, testRows[i]); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	}
 
 	t.Run("Basic", func(t *testing.T) {
 		var got []testRow
@@ -337,6 +337,23 @@ func TestIntegrationQuery(t *testing.T) {
 		}
 		if len(got) <= 1 {
 			t.Errorf("expected more than one row, got: %v", len(got))
+		}
+	})
+
+	t.Run("WithFilter", func(t *testing.T) {
+		var got []testRow
+		err := uut.Query(
+			ctx,
+			testRows[0].PK,
+			"",
+			&got,
+			WithFilters(expression.Name("TestInt").GreaterThanEqual(expression.Value(2))),
+		)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if len(got) != 6 {
+			t.Errorf("expected 6 rows, got: %v", len(got))
 		}
 	})
 }

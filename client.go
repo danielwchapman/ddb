@@ -83,74 +83,6 @@ func (c *Client) Get(ctx context.Context, pk, sk string, out any) error {
 	return nil
 }
 
-func (c *Client) Query(ctx context.Context, pk, skBeginsWith string, out any, opts ...Option) error {
-	if pk == "" {
-		return &InvalidArgumentError{errors.New("pk cannot be empty")}
-	}
-
-	var queryOptions options
-	for _, opt := range opts {
-		if err := opt(&queryOptions); err != nil {
-			return fmt.Errorf("Query: %w", err)
-		}
-	}
-
-	var (
-		pkColumnName = defaultPK
-		skColumnName = defaultSK
-	)
-
-	if queryOptions.indexName != "" {
-		pkColumnName = queryOptions.pkName
-		skColumnName = queryOptions.skName
-	}
-
-	keyCondition := expression.Key(pkColumnName).Equal(expression.Value(pk))
-	if skBeginsWith != "" {
-		keyCondition = keyCondition.And(expression.Key(skColumnName).BeginsWith(skBeginsWith))
-	}
-
-	expr, err := expression.
-		NewBuilder().
-		WithKeyCondition(keyCondition).
-		Build()
-
-	scanForward := !queryOptions.scanBackwards
-
-	req := dynamodb.QueryInput{
-		ExclusiveStartKey:         queryOptions.startKey,
-		KeyConditionExpression:    expr.KeyCondition(),
-		ExpressionAttributeValues: expr.Values(),
-		ExpressionAttributeNames:  expr.Names(),
-		Limit:                     queryOptions.pageSize,
-		ScanIndexForward:          &scanForward,
-		TableName:                 &c.Table,
-	}
-
-	result, err := c.Ddb.Query(ctx, &req)
-	if err != nil {
-		return fmt.Errorf("Query: %w", err)
-	}
-
-	if len(result.Items) == 0 {
-		return ErrNotFound
-	}
-
-	if err = attributevalue.UnmarshalListOfMaps(result.Items, &out); err != nil {
-		return &InternalError{err: fmt.Errorf("Query: UnmarshalListOfMaps: %w", err)}
-	}
-
-	if queryOptions.pageOut != nil && len(result.LastEvaluatedKey) > 0 {
-		lastEvaluatedKey, err := SerializeExclusiveStartKey(result.LastEvaluatedKey)
-		if err != nil {
-			return &InternalError{err: fmt.Errorf("Query: SerializeExclusiveStartKey: %w", err)}
-		}
-		*queryOptions.pageOut = lastEvaluatedKey
-	}
-
-	return nil
-}
-
 func (c *Client) Put(ctx context.Context, row any, opts ...Option) error {
 	var putOptions options
 	for _, opt := range opts {
@@ -208,6 +140,92 @@ func (c *Client) Put(ctx context.Context, row any, opts ...Option) error {
 		if err := attributevalue.UnmarshalMap(out.Attributes, putOptions.returnValuesOut); err != nil {
 			return fmt.Errorf("Put: UnmarshalMap: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func (c *Client) Query(ctx context.Context, pk, skBeginsWith string, out any, opts ...Option) error {
+	if pk == "" {
+		return &InvalidArgumentError{errors.New("pk cannot be empty")}
+	}
+
+	var queryOptions options
+	for _, opt := range opts {
+		if err := opt(&queryOptions); err != nil {
+			return fmt.Errorf("Query: %w", err)
+		}
+	}
+
+	var (
+		pkColumnName = defaultPK
+		skColumnName = defaultSK
+	)
+
+	if queryOptions.indexName != "" {
+		pkColumnName = queryOptions.pkName
+		skColumnName = queryOptions.skName
+	}
+
+	keyCondition := expression.Key(pkColumnName).Equal(expression.Value(pk))
+	if skBeginsWith != "" {
+		keyCondition = keyCondition.And(expression.Key(skColumnName).BeginsWith(skBeginsWith))
+	}
+
+	var (
+		expr expression.Expression
+		err  error
+	)
+
+	if queryOptions.filter != nil {
+		expr, err = expression.
+			NewBuilder().
+			WithKeyCondition(keyCondition).
+			WithFilter(*queryOptions.filter).
+			Build()
+	} else {
+		expr, err = expression.
+			NewBuilder().
+			WithKeyCondition(keyCondition).
+			Build()
+	}
+
+	if err != nil {
+		return fmt.Errorf("Query: expression builder: %w", err)
+	}
+
+	scanForward := !queryOptions.scanBackwards
+
+	req := dynamodb.QueryInput{
+		ExclusiveStartKey:         queryOptions.startKey,
+		KeyConditionExpression:    expr.KeyCondition(),
+		ExpressionAttributeValues: expr.Values(),
+		ExpressionAttributeNames:  expr.Names(),
+		FilterExpression:          expr.Filter(),
+		Limit:                     queryOptions.pageSize,
+		ScanIndexForward:          &scanForward,
+		TableName:                 &c.Table,
+	}
+
+	result, err := c.Ddb.Query(ctx, &req)
+	if err != nil {
+		return fmt.Errorf("Query: %w", err)
+	}
+
+	if len(result.Items) == 0 {
+		return ErrNotFound
+	}
+
+	if err = attributevalue.UnmarshalListOfMaps(result.Items, &out); err != nil {
+		return &InternalError{err: fmt.Errorf("Query: UnmarshalListOfMaps: %w", err)}
+	}
+
+	if queryOptions.pageOut != nil && len(result.LastEvaluatedKey) > 0 {
+		lastEvaluatedKey, err := SerializeExclusiveStartKey(result.LastEvaluatedKey)
+		if err != nil {
+			return &InternalError{err: fmt.Errorf("Query: SerializeExclusiveStartKey: %w", err)}
+		}
+		*queryOptions.pageOut = lastEvaluatedKey
 	}
 
 	return nil

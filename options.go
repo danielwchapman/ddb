@@ -25,6 +25,7 @@ type options struct {
 	indexName     string
 	pkName        string
 	skName        string
+	filter        *expression.ConditionBuilder
 }
 
 type Option func(options *options) error
@@ -43,6 +44,13 @@ func WithFieldUpdates(updates map[string]any) Option {
 
 		options.updatesCount += len(item)
 
+		return nil
+	}
+}
+
+func WithFilters(filter expression.ConditionBuilder) Option {
+	return func(options *options) error {
+		options.filter = &filter
 		return nil
 	}
 }
