@@ -26,6 +26,10 @@ type options struct {
 	pkName        string
 	skName        string
 	filter        *expression.ConditionBuilder
+
+	// use a function for key condition because otherwise the pkColumnName or skColumnName
+	// may not be set yet, depending on the order the options are provided in.
+	keyConditionFn func(pkColumnName, skColumnName string) expression.KeyConditionBuilder
 }
 
 type Option func(options *options) error

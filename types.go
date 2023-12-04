@@ -23,3 +23,23 @@ type RowGSI1Header struct {
 	GSI1PK string
 	GSI1SK string
 }
+
+type RowGSI2Header struct {
+	GSI2PK string
+	GSI2SK string
+}
+
+type RowGSI3Header struct {
+	GSI3PK string
+	GSI3SK string
+}
+
+type RowGSI4Header struct {
+	GSI4PK string
+	GSI4SK string
+}
+
+type RowGSI5Header struct {
+	GSI5PK string
+	GSI5SK string
+}

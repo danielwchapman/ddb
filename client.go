@@ -145,11 +145,7 @@ func (c *Client) Put(ctx context.Context, row any, opts ...Option) error {
 	return nil
 }
 
-func (c *Client) Query(ctx context.Context, pk, skBeginsWith string, out any, opts ...Option) error {
-	if pk == "" {
-		return &InvalidArgumentError{errors.New("pk cannot be empty")}
-	}
-
+func (c *Client) Query(ctx context.Context, keyCond KeyCondition, out any, opts ...Option) error {
 	var queryOptions options
 	for _, opt := range opts {
 		if err := opt(&queryOptions); err != nil {
@@ -167,10 +163,7 @@ func (c *Client) Query(ctx context.Context, pk, skBeginsWith string, out any, op
 		skColumnName = queryOptions.skName
 	}
 
-	keyCondition := expression.Key(pkColumnName).Equal(expression.Value(pk))
-	if skBeginsWith != "" {
-		keyCondition = keyCondition.And(expression.Key(skColumnName).BeginsWith(skBeginsWith))
-	}
+	keyCondition := keyCond(pkColumnName, skColumnName)
 
 	var (
 		expr expression.Expression

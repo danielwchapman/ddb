@@ -17,8 +17,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-// TODO use a test table instead
-
 var now = time.Now().Truncate(0)
 
 var uut = func() *Client {
@@ -217,7 +215,7 @@ func TestIntegrationQuery(t *testing.T) {
 
 	t.Run("Basic", func(t *testing.T) {
 		var got []testRow
-		if err := uut.Query(ctx, testRows[0].PK, "SK", &got); err != nil {
+		if err := uut.Query(ctx, KeySkBeginsWith(testRows[0].PK, "SK"), &got); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 
@@ -227,9 +225,9 @@ func TestIntegrationQuery(t *testing.T) {
 	})
 
 	// Empty BeginsWith should return all PK rows
-	t.Run("Empty BeginsWith", func(t *testing.T) {
+	t.Run("KeyPkOnly KeyCondition", func(t *testing.T) {
 		var got []testRow
-		if err := uut.Query(ctx, testRows[0].PK, "", &got); err != nil {
+		if err := uut.Query(ctx, KeyPkOnly(testRows[0].PK), &got); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 
@@ -240,7 +238,7 @@ func TestIntegrationQuery(t *testing.T) {
 
 	t.Run("NotFound Error", func(t *testing.T) {
 		var got []testRow
-		err := uut.Query(ctx, "NotInTable", "NotThere", &got)
+		err := uut.Query(ctx, KeyPkOnly("NotInTable"), &got)
 		if !errors.Is(err, ErrNotFound) {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -257,8 +255,8 @@ func TestIntegrationQuery(t *testing.T) {
 
 		if err := uut.Query(
 			ctx,
-			testRows[0].PK,
-			"SK", &got1,
+			KeySkBeginsWith(testRows[0].PK, "SK"),
+			&got1,
 			WithPageSize(pageSize),
 			WithPage(pageToken, &pageToken), // empty pageToken the first time
 		); err != nil {
@@ -275,8 +273,8 @@ func TestIntegrationQuery(t *testing.T) {
 
 		if err := uut.Query(
 			ctx,
-			testRows[0].PK,
-			"SK", &got2,
+			KeySkBeginsWith(testRows[0].PK, "SK"),
+			&got2,
 			WithPageSize(pageSize),
 			WithPage(pageToken, &pageToken),
 		); err != nil {
@@ -295,7 +293,7 @@ func TestIntegrationQuery(t *testing.T) {
 	t.Run("Honor PageSize", func(t *testing.T) {
 		const pageSize = 3
 		var got []testRow
-		if err := uut.Query(ctx, testRows[0].PK, "", &got, WithPageSize(pageSize)); err != nil {
+		if err := uut.Query(ctx, KeyPkOnly(testRows[0].PK), &got, WithPageSize(pageSize)); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 
@@ -306,7 +304,7 @@ func TestIntegrationQuery(t *testing.T) {
 
 	t.Run("Honor ScanBackwards", func(t *testing.T) {
 		var got []testRow
-		if err := uut.Query(ctx, testRows[0].PK, "SK", &got, WithScanBackwards()); err != nil {
+		if err := uut.Query(ctx, KeySkBeginsWith(testRows[0].PK, "SK"), &got, WithScanBackwards()); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 
@@ -332,7 +330,7 @@ func TestIntegrationQuery(t *testing.T) {
 
 	t.Run("Ignore Zero PageSize", func(t *testing.T) {
 		var got []testRow
-		if err := uut.Query(ctx, testRows[0].PK, "", &got, WithPageSize(0)); err != nil {
+		if err := uut.Query(ctx, KeyPkOnly(testRows[0].PK), &got, WithPageSize(0)); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 		if len(got) <= 1 {
@@ -344,8 +342,7 @@ func TestIntegrationQuery(t *testing.T) {
 		var got []testRow
 		err := uut.Query(
 			ctx,
-			testRows[0].PK,
-			"",
+			KeyPkOnly(testRows[0].PK),
 			&got,
 			WithFilters(expression.Name("TestInt").GreaterThanEqual(expression.Value(2))),
 		)
@@ -354,6 +351,81 @@ func TestIntegrationQuery(t *testing.T) {
 		}
 		if len(got) != 6 {
 			t.Errorf("expected 6 rows, got: %v", len(got))
+		}
+	})
+
+	t.Run("KeySkGreaterThan", func(t *testing.T) {
+		var got []testRow
+		err := uut.Query(
+			ctx,
+			KeySkGreaterThan(testRows[0].PK, "SK#4"),
+			&got,
+		)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if len(got) != 3 {
+			t.Errorf("expected 3 rows, got: %d", len(got))
+		}
+	})
+
+	t.Run("KeySkGreaterThanEqual", func(t *testing.T) {
+		var got []testRow
+		err := uut.Query(
+			ctx,
+			KeySkGreaterThanEqual(testRows[0].PK, "SK#4"),
+			&got,
+		)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if len(got) != 4 {
+			t.Errorf("expected 4 rows, got: %d", len(got))
+		}
+	})
+
+	t.Run("KeySkLessThan", func(t *testing.T) {
+		var got []testRow
+		err := uut.Query(
+			ctx,
+			KeySkLessThan(testRows[0].PK, "SK#2"),
+			&got,
+		)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if len(got) != 2 {
+			t.Errorf("expected 2 rows, got: %d", len(got))
+		}
+	})
+
+	t.Run("KeySkLessThanEqual", func(t *testing.T) {
+		var got []testRow
+		err := uut.Query(
+			ctx,
+			KeySkLessThanEqual(testRows[0].PK, "SK#2"),
+			&got,
+		)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if len(got) != 3 {
+			t.Errorf("expected 3 rows, got: %d", len(got))
+		}
+	})
+
+	t.Run("KeySkBetween", func(t *testing.T) {
+		var got []testRow
+		err := uut.Query(
+			ctx,
+			KeySkBetween(testRows[0].PK, "SK#2", "SK#4"),
+			&got,
+		)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		if len(got) != 3 {
+			t.Errorf("expected 3 rows, got: %d", len(got))
 		}
 	})
 }
