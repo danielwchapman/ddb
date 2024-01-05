@@ -187,6 +187,11 @@ func (c *Client) Query(ctx context.Context, keyCond KeyCondition, out any, opts 
 		return fmt.Errorf("Query: expression builder: %w", err)
 	}
 
+	var indexName *string
+	if queryOptions.indexName != "" {
+		indexName = &queryOptions.indexName
+	}
+
 	scanForward := !queryOptions.scanBackwards
 
 	req := dynamodb.QueryInput{
@@ -195,6 +200,7 @@ func (c *Client) Query(ctx context.Context, keyCond KeyCondition, out any, opts 
 		ExpressionAttributeValues: expr.Values(),
 		ExpressionAttributeNames:  expr.Names(),
 		FilterExpression:          expr.Filter(),
+		IndexName:                 indexName,
 		Limit:                     queryOptions.pageSize,
 		ScanIndexForward:          &scanForward,
 		TableName:                 &c.Table,
