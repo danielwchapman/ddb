@@ -14,7 +14,7 @@ type ClientInterface interface {
 }
 
 type Deleter interface {
-	Delete(ctx context.Context, pk, sk string) error
+	Delete(ctx context.Context, pk, sk string, opts ...Option) error
 }
 
 type Getter interface {

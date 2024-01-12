@@ -42,13 +42,46 @@ type Client struct {
 
 var _ ClientInterface = (*Client)(nil)
 
-func (c *Client) Delete(ctx context.Context, pk, sk string) error {
+func (c *Client) Delete(ctx context.Context, pk, sk string, opts ...Option) error {
+	var deleteOptions options
+	for _, opt := range opts {
+		err := opt(&deleteOptions)
+		if err != nil {
+			return err
+		}
+	}
+
+	// TODO throw error if unsupported options are provided
+
+	var (
+		expressionAttributeValues map[string]types.AttributeValue
+		expressionAttributeNames  map[string]string
+		condition                 *string
+	)
+
+	if deleteOptions.conditionsCount > 0 {
+		expr, err := expression.NewBuilder().
+			WithCondition(deleteOptions.conditions).
+			Build()
+
+		if err != nil {
+			return fmt.Errorf("Put: expression builder: %w", err)
+		}
+
+		expressionAttributeValues = expr.Values()
+		expressionAttributeNames = expr.Names()
+		condition = expr.Condition()
+	}
+
 	_, err := c.Ddb.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: &c.Table,
 		Key: map[string]types.AttributeValue{
 			defaultPK: &types.AttributeValueMemberS{Value: pk},
 			defaultSK: &types.AttributeValueMemberS{Value: sk},
 		},
+		ConditionExpression:       condition,
+		ExpressionAttributeNames:  expressionAttributeNames,
+		ExpressionAttributeValues: expressionAttributeValues,
 	})
 
 	if err != nil {

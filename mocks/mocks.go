@@ -36,17 +36,22 @@ func (m *MockClientInterface) EXPECT() *MockClientInterfaceMockRecorder {
 }
 
 // Delete mocks base method.
-func (m *MockClientInterface) Delete(ctx context.Context, pk, sk string) error {
+func (m *MockClientInterface) Delete(ctx context.Context, pk, sk string, opts ...ddb.Option) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, pk, sk)
+	varargs := []interface{}{ctx, pk, sk}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Delete", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockClientInterfaceMockRecorder) Delete(ctx, pk, sk interface{}) *gomock.Call {
+func (mr *MockClientInterfaceMockRecorder) Delete(ctx, pk, sk interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClientInterface)(nil).Delete), ctx, pk, sk)
+	varargs := append([]interface{}{ctx, pk, sk}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockClientInterface)(nil).Delete), varargs...)
 }
 
 // Get mocks base method.
@@ -163,17 +168,22 @@ func (m *MockDeleter) EXPECT() *MockDeleterMockRecorder {
 }
 
 // Delete mocks base method.
-func (m *MockDeleter) Delete(ctx context.Context, pk, sk string) error {
+func (m *MockDeleter) Delete(ctx context.Context, pk, sk string, opts ...ddb.Option) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, pk, sk)
+	varargs := []interface{}{ctx, pk, sk}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Delete", varargs...)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockDeleterMockRecorder) Delete(ctx, pk, sk interface{}) *gomock.Call {
+func (mr *MockDeleterMockRecorder) Delete(ctx, pk, sk interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDeleter)(nil).Delete), ctx, pk, sk)
+	varargs := append([]interface{}{ctx, pk, sk}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockDeleter)(nil).Delete), varargs...)
 }
 
 // MockGetter is a mock of Getter interface.
