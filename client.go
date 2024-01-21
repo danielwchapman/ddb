@@ -93,6 +93,8 @@ func (c *Client) Delete(ctx context.Context, pk, sk string, opts ...Option) erro
 }
 
 func (c *Client) Get(ctx context.Context, pk, sk string, out any) error {
+	// TODO validate out is a pointer
+
 	req := dynamodb.GetItemInput{
 		TableName: &c.Table,
 		Key: map[string]types.AttributeValue{
@@ -180,6 +182,8 @@ func (c *Client) Put(ctx context.Context, row any, opts ...Option) error {
 }
 
 func (c *Client) Query(ctx context.Context, keyCond KeyCondition, out any, opts ...Option) error {
+	// TODO validate that out is a pointer
+
 	var queryOptions options
 	for _, opt := range opts {
 		if err := opt(&queryOptions); err != nil {
@@ -250,11 +254,11 @@ func (c *Client) Query(ctx context.Context, keyCond KeyCondition, out any, opts 
 	}
 
 	if queryOptions.unmarshalFn == nil {
-		if err = attributevalue.UnmarshalListOfMaps(result.Items, &out); err != nil {
+		if err = attributevalue.UnmarshalListOfMaps(result.Items, out); err != nil {
 			return &InternalError{err: fmt.Errorf("Query: UnmarshalListOfMaps: %w", err)}
 		}
 	} else {
-		if err = queryOptions.unmarshalFn(result.Items, &out); err != nil {
+		if err = queryOptions.unmarshalFn(result.Items, out); err != nil {
 			return &InternalError{err: fmt.Errorf("Query: custom unmarshal func: %w", err)}
 		}
 	}
