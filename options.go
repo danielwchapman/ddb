@@ -26,7 +26,7 @@ type options struct {
 	indexName     string
 	pkName        string
 	skName        string
-	unmarshalFn   func(items []map[string]types.AttributeValue, out *any) error
+	unmarshalFn   func(items []map[string]types.AttributeValue, out any) error
 
 	// use a function for key condition because otherwise the pkColumnName or skColumnName
 	// may not be set yet, depending on the order the options are provided in.
@@ -177,7 +177,7 @@ func WithScanBackwards() Option {
 	}
 }
 
-func WithUnmarshalFunc(fn func(items []map[string]types.AttributeValue, out *any) error) Option {
+func WithUnmarshalFunc(fn func(items []map[string]types.AttributeValue, out any) error) Option {
 	return func(options *options) error {
 		options.unmarshalFn = fn
 		return nil
