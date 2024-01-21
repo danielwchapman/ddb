@@ -249,7 +249,7 @@ func (c *Client) Query(ctx context.Context, keyCond KeyCondition, out any, opts 
 		return ErrNotFound
 	}
 
-	if queryOptions.unmarshalFn != nil {
+	if queryOptions.unmarshalFn == nil {
 		if err = attributevalue.UnmarshalListOfMaps(result.Items, &out); err != nil {
 			return &InternalError{err: fmt.Errorf("Query: UnmarshalListOfMaps: %w", err)}
 		}
