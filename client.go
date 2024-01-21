@@ -85,6 +85,7 @@ func (c *Client) Delete(ctx context.Context, pk, sk string, opts ...Option) erro
 	})
 
 	if err != nil {
+		// TODO check for conditional errors
 		return fmt.Errorf("Delete: DeleteItem: %w", err)
 	}
 
@@ -248,8 +249,14 @@ func (c *Client) Query(ctx context.Context, keyCond KeyCondition, out any, opts 
 		return ErrNotFound
 	}
 
-	if err = attributevalue.UnmarshalListOfMaps(result.Items, &out); err != nil {
-		return &InternalError{err: fmt.Errorf("Query: UnmarshalListOfMaps: %w", err)}
+	if queryOptions.unmarshalFn != nil {
+		if err = attributevalue.UnmarshalListOfMaps(result.Items, &out); err != nil {
+			return &InternalError{err: fmt.Errorf("Query: UnmarshalListOfMaps: %w", err)}
+		}
+	} else {
+		if err = queryOptions.unmarshalFn(result.Items, &out); err != nil {
+			return &InternalError{err: fmt.Errorf("Query: custom unmarshal func: %w", err)}
+		}
 	}
 
 	if queryOptions.pageOut != nil && len(result.LastEvaluatedKey) > 0 {
@@ -326,7 +333,7 @@ func (c *Client) TransactPuts(ctx context.Context, token string, rows ...PutRow)
 	return nil
 }
 
-//// TransactWrites uses a DynamoDB transaction to put multiple items in one atomic request.
+// TransactWrites uses a DynamoDB transaction to put multiple items in one atomic request.
 //func (c *Client) TransactWrites(ctx context.Context, token string, puts []PutRow, deletes []DeleteRow, updates []UpdateRow) error {
 //    if len(puts)+len(deletes)+len(updates) > 100 {
 //        return grpcerrors.MakeInvalidArgumentError("cannot exceed 100 rows")
@@ -366,7 +373,7 @@ func (c *Client) TransactPuts(ctx context.Context, token string, rows ...PutRow)
 //        return fmt.Errorf("TransactPuts: TransactWriteItems: %w", err)
 //    }
 //
-//    return nil
+//   return nil
 //}
 
 // Update updates an item in a table. The row map must contain the updated values for the item. If a key is not

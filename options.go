@@ -22,10 +22,11 @@ type options struct {
 	startKey      map[string]types.AttributeValue
 	pageOut       *string
 	scanBackwards bool
+	filter        *expression.ConditionBuilder
 	indexName     string
 	pkName        string
 	skName        string
-	filter        *expression.ConditionBuilder
+	unmarshalFn   func(items []map[string]types.AttributeValue, out any) error
 
 	// use a function for key condition because otherwise the pkColumnName or skColumnName
 	// may not be set yet, depending on the order the options are provided in.
@@ -172,6 +173,13 @@ func WithReturnValues(returnValues types.ReturnValue, out any) Option {
 func WithScanBackwards() Option {
 	return func(options *options) error {
 		options.scanBackwards = true
+		return nil
+	}
+}
+
+func WithUnmarshalFunc(fn func(items []map[string]types.AttributeValue, out any) error) Option {
+	return func(options *options) error {
+		options.unmarshalFn = fn
 		return nil
 	}
 }

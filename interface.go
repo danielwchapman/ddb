@@ -9,7 +9,8 @@ type ClientInterface interface {
 	Getter
 	Putter
 	Queryer
-	TransactPutter
+	TransactionPutter
+	//TransactionWriter
 	Updater
 }
 
@@ -29,9 +30,13 @@ type Queryer interface {
 	Query(ctx context.Context, keyCond KeyCondition, out any, opts ...Option) error
 }
 
-type TransactPutter interface {
+type TransactionPutter interface {
 	TransactPuts(ctx context.Context, token string, rows ...PutRow) error
 }
+
+//type TransactionWriter interface {
+//	TransactWrite(ctx context.Context, token string, rows ...any) error
+//}
 
 type Updater interface {
 	Update(ctx context.Context, pk, sk string, opts ...Option) error
